@@ -1,0 +1,49 @@
+﻿@page "/Notificaciones"
+
+@using Backend.Services
+@using Backend.Controllers
+@using Backend
+@using Backend.DTOs
+@inject ControllerNotificacion ControllerNotificacion
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ServicioSessionLogic SessionLogic
+
+<PageTitle>Notificaciones</PageTitle>
+
+@if (SessionLogic.ClienteActual != null && SessionLogic.ClienteActual.Rol == EnumRol.Cliente)
+{
+    <h3>Notificaciones</h3>
+    <hr />
+
+    if (notificaciones.Count == 0)
+    {
+        <p>No hay notificaciones.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var notificacion in notificaciones)
+            {
+                <li>
+                    @notificacion.Fecha.ToShortDateString() - @notificacion.Mensaje
+                    <button @onclick="() => EliminarNotificacion(notificacion.ID)">Eliminar</button>
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private List<DtoNotificacion> notificaciones;
+
+    protected override void OnInitialized()
+    {
+        notificaciones = ControllerNotificacion.ObtenerNotificacionesPorUsuario(SessionLogic.ClienteActual.ID);
+    }
+
+    private void EliminarNotificacion(int id)
+    {
+        ControllerNotificacion.EliminarNotificacion(id);
+        notificaciones = notificaciones.Where(n => n.ID != id).ToList();
+    }
+}

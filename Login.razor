@@ -1,0 +1,90 @@
+﻿@page "/login"
+@using Backend
+@using Backend.Controllers
+@using Backend.DTOs
+@using Backend.Services
+@inject NavigationManager NavigationManager
+@inject ControllerUsuario ControllerUsuario
+@inject ServicioSessionLogic SessionLogic
+
+@if (SessionLogic.ClienteActual == null && SessionLogic.UsuarioActual == null)
+{
+    <h3>Iniciar sesión</h3>
+
+    <form @onsubmit=IniciarSesion>
+        <div class="mb-3 row">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="error-message" style="color: red;">
+                    @errorMessage
+                </div>
+            }
+            <label for="mailUsuario" class="col-sm-2 col-form-label">Mail</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" @bind="mailUsuario" required>
+            </div>
+        </div>
+        <div class="mb-3 row">
+            <label for="password" class="col-sm-2 col-form-label">Contraseña</label>
+            <div class="col-sm-10">
+                <input type="password" class="form-control" @bind="password" required>
+            </div>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary" @onclick=IniciarSesion>Iniciar</button>
+        </div>
+    </form>
+}
+
+@code {
+    private string mailUsuario;
+    private string password;
+    private string errorMessage = "";
+
+    private List<DtoUsuario> listaUsuarios;
+
+    protected override void OnInitialized()
+    {
+        listaUsuarios = ControllerUsuario.TraerUsuarios();
+    }
+
+    private bool existeUsuario()
+    {
+        return ControllerUsuario.ExisteUsuarioConEseMailYContrasena(mailUsuario, password);
+    }
+
+    private bool validarFormulario()
+    {
+        if (!existeUsuario())
+        {
+            errorMessage = "No existe un cliente con ese mail.";
+            return false;
+        }
+        errorMessage = "";
+        return true;
+    }
+
+    private void IniciarSesion()
+    {
+        var usuarioDto = ControllerUsuario.RetornarUsuarioPorMailYContrasena(mailUsuario, password);
+        if (usuarioDto != null)
+        {
+            if (usuarioDto.Rol == EnumRol.Administrador)
+            {
+                SessionLogic.LoginAdmin(usuarioDto);
+            }
+            else if (usuarioDto.Rol == EnumRol.Cliente)
+            {
+                SessionLogic.LoginCliente(usuarioDto);
+            }
+            NavigationManager.NavigateTo("/NavMenu");
+        }
+        else
+        {
+            errorMessage = "Usuario no encontrado. Verifique sus credenciales.";
+        }
+    }
+
+}
+
+

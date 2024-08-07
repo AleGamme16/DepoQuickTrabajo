@@ -1,0 +1,324 @@
+﻿@page "/ReservasCliente"
+@using Backend;
+@using Backend.DTOs;
+@using Backend.Controllers;
+@using Backend.Services;
+@using Microsoft.AspNetCore.Components.Web;
+@using Microsoft.AspNetCore.Components.Authorization;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject ServicioSessionLogic SessionLogic
+@inject ControllerReserva ControllerReserva
+@inject ControllerDeposito ControllerDeposito
+
+@if (SessionLogic.ClienteActual != null && SessionLogic.ClienteActual.Rol == EnumRol.Cliente)
+{
+    <h3>Mis Reservas</h3>
+    <hr />
+    <br />
+
+    <div class="modal" style="display:@(showCostModal ? "block" : "none");background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Costo de la reserva:</h5>
+                    <button type="button" class="close" @onclick="() => showCostModal = false">&times;</button>
+                </div>
+                <div class="modal-body">
+                    @if (validarFormulario())
+                    {
+                        DtoReservaActual.Costo = ControllerReserva.CalcularCostoReserva(DtoReservaActual.FechaInicio, DtoReservaActual.FechaFin, DtoReservaActual.DepositoID);
+                        <p>El monto total es: $@DtoReservaActual.Costo</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => showCostModal = false">Ok</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" style="display:@(showValoracionModal ? "block" : "none");background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ingrese un puntaje del 1 (Muy malo) al 5 (Muy bueno):</h5>
+                    <button type="button" class="close" @onclick="() => showValoracionModal = false">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="number" class="form-control" placeholder="Del 1 (Muy malo) al 5 (Muy bueno)" @bind-value="DtoValoracionActual.Estrellas" min="1" max="5">
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control" placeholder="Ingrese un comentario" @bind="DtoValoracionActual.Comentario"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success" @onclick="() => { HandleValoracion(); showValoracionModal = false; }">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Deposito</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Costo</th>
+                <th>Estado</th>
+                <th>Estado de Pago</th>
+                <th>Motivo de Rechazo</th>
+                <th>Agregar Valoracion</th>
+                <th>Pagar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var dtoreserva in listaReservas)
+            {
+                if (dtoreserva.ClienteID == SessionLogic.ClienteActual.ID)
+                {
+                    <tr>
+                        <td>@dtoreserva.NombreCliente @dtoreserva.ApellidoCliente</td>
+                        <td>@dtoreserva.TamanoDeposito</td>
+                        <td>@dtoreserva.FechaInicio.ToShortDateString()</td>
+                        <td>@dtoreserva.FechaFin.ToShortDateString()</td>
+                        <td>@dtoreserva.Costo</td>
+                        <td>@dtoreserva.Estado</td>
+                        @if (dtoreserva.EstadoPago == null)
+                        {
+                            <td></td>
+                        }
+                        else
+                        {
+                            <td>@dtoreserva.EstadoPago</td>
+                        }
+                        <td>@dtoreserva.MotivoRechazo</td>
+                        <td>
+                            @if (dtoreserva.FechaFin < DateTime.Today && !ControllerReserva.ReservaEstaRechazada(dtoreserva))
+                            {
+                                <button class="btn btn-success" @onclick="() => PromptValoracionModal(dtoreserva)">Valorar</button>
+                            }
+                        </td>
+                        <td>
+                            @if (dtoreserva.EstadoPago == EnumEstadoPago.Abonar)
+                            {
+                                <button class="btn btn-primary" @onclick="() => ProcesarPago(dtoreserva.ID)">Pagar</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+
+    <br />
+
+    <h3>Hacer una nueva Reserva:</h3>
+    <hr />
+    <br />
+
+    <div class="container mt-4" style="margin-left: 50px;">
+        @if(!ControllerDeposito.VerificarDisponibilidad(DtoReservaActual.DepositoID, DtoReservaActual.FechaInicio, DtoReservaActual.FechaFin))
+        {
+            <div class="error-message" style="color: red;">
+                No esta disponible el deposito en esas fechas.
+            </div>
+        }
+        @if (!validarFormulario() && showValidationError && !string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="error-message" style="color: red;">
+                @errorMessage
+            </div>
+        }
+        <form class="row g-3">
+            <div class="form-group col-md-5">
+                <label for="ID_depositoSelect">Depósito:</label>
+                <select class="form-control" id="ID_depositoSelect" @bind="DtoReservaActual.DepositoID">
+                    <option value="">Seleccione un depósito...</option>
+                    @foreach (var deposito in listaDepositos)
+                    {
+                        <option value="@deposito.ID">@deposito.ToString()</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="inputFechaDesde" class="form-label">Fecha (Desde)</label>
+                <input type="date" class="form-control" id="inputFechaDesde" @bind-value="DtoReservaActual.FechaInicio" min="@DateTime.Today.ToString("yyyy-MM-dd")">
+            </div>
+            <div class="col-md-3">
+                <label for="inputFechaHasta" class="form-label">Fecha (Hasta)</label>
+                <input type="date" class="form-control" id="inputFechaHasta" @bind-value="DtoReservaActual.FechaFin" min="@DateTime.Today.ToString("yyyy-MM-dd")">
+            </div>
+
+            <div class="col-12">
+                <button class="btn btn-primary" type="button" @onclick="() => CalcularCosto()">Calcular costo</button>
+            </div>
+
+            <div class="col-12">
+                <button class="btn btn-success" type="button" @onclick="HandleReservar">Reservar</button>
+            </div>
+        </form>
+    </div>
+    <br />
+
+    <br />
+
+    <h3>Valoraciones de depositos:</h3>
+    <hr />
+    <br />
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Area del Deposito</th>
+                <th>Tamaño</th>
+                <th>Climatizado</th>
+                <th>Valoracion</th>
+                <th>Comentarios</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (listaValoraciones.Count > 0)
+            {
+                @foreach (var valoracion in listaValoraciones)
+                {
+                    <tr>
+                        <td>@valoracion.AreaDeposito</td>
+                        <td>@valoracion.TamanoDeposito</td>
+                        <td>@(valoracion.DepositoClimatizado ? "Sí" : "No")</td>
+                        <td>@valoracion.Estrellas</td>
+                        <td>@valoracion.Comentario</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <br />
+}
+else
+{
+    <h2>No tienes acceso</h2>
+}
+
+@code {
+    private List<DtoReserva>? listaReservas;
+    private List<DtoDeposito>? listaDepositos;
+    private List<DtoValoracion>? listaValoraciones;
+
+    private DtoReserva DtoReservaActual = new DtoReserva();
+    private DtoValoracion DtoValoracionActual = new DtoValoracion();
+
+    private string errorMessage = "";
+    private bool showValidationError = false;
+    private bool showCostModal;
+    private bool showValoracionModal;
+
+    protected override void OnInitialized()
+    {
+        listaReservas = ControllerReserva.TraerReservasDto();
+        listaDepositos = ControllerReserva.TraerDepositosDto();
+        listaValoraciones = ControllerReserva.TraerValoracionesDto();
+    }
+
+    private void CalcularCosto()
+    {
+        if (validarFormulario())
+        {
+            DtoReservaActual.Costo = ControllerReserva.CalcularCostoReserva(DtoReservaActual.FechaInicio, DtoReservaActual.FechaFin, DtoReservaActual.DepositoID);
+            showCostModal = true;
+        }
+        else
+        {
+            errorMessage = "Hay datos invalidos en el formulario";
+        }
+    }
+
+    private void HandleReservar()
+    {
+        showValidationError = true;
+        if (validarFormulario())
+        {
+            try
+            {
+                if (SessionLogic.ClienteActual == null)
+                {
+                    throw new InvalidOperationException("El cliente no está autenticado.");
+                }
+
+                DtoReservaActual.ClienteID = SessionLogic.ClienteActual.ID;
+                DtoReservaActual.Costo = ControllerReserva.CalcularCostoReserva(DtoReservaActual.FechaInicio, DtoReservaActual.FechaFin, DtoReservaActual.DepositoID);
+
+                if (ControllerDeposito.VerificarDisponibilidad(DtoReservaActual.DepositoID, DtoReservaActual.FechaInicio, DtoReservaActual.FechaFin))
+                {
+                    ControllerReserva.AgregarReserva(DtoReservaActual);
+                    showValidationError = false;
+                    ActualizarReservas();
+                }
+                else
+                {
+                    errorMessage = "El depósito no está disponible en las fechas seleccionadas.";
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = "Ocurrió un error al procesar la reserva: " + ex.Message;
+            }
+        }
+    }
+
+    private bool validarFormulario()
+    {
+        if (DtoReservaActual.DepositoID == 0)
+        {
+            errorMessage = "Se debe seleccionar un depósito.";
+            return false;
+        }
+        else if (DtoReservaActual.FechaInicio > DtoReservaActual.FechaFin || DtoReservaActual.FechaInicio < DateTime.Today)
+        {
+            errorMessage = "Las fechas no son válidas.";
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    private void HandleValoracion()
+    {
+        ControllerReserva.AgregarValoracion(DtoValoracionActual);
+    }
+
+    private void ActualizarReservas()
+    {
+        listaReservas = ControllerReserva.TraerReservasDto();
+        StateHasChanged();
+    }
+
+    private void PromptValoracionModal(DtoReserva unDtoReserva)
+    {
+        DtoValoracionActual.UsuarioID = SessionLogic.ClienteActual.ID;
+        DtoValoracionActual.DepositoID = unDtoReserva.DepositoID;
+        DtoValoracionActual.Comentario = "";
+        DtoValoracionActual.Estrellas = 1;
+        showValoracionModal = true;
+    }
+
+    private void ProcesarPago(int reservaID)
+    {
+        try
+        {
+            ControllerReserva.ProcesarPago(reservaID);
+            ActualizarReservas();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Ocurrió un error al procesar el pago: " + ex.Message;
+        }
+    }
+}
+

@@ -1,0 +1,58 @@
+﻿
+@if(SessionLogic.UsuarioActual==null && SessionLogic.ClienteActual==null){
+
+    @page "/"
+    @inject NavigationManager NavigationManager
+    @using Backend.SQL
+    @using Backend.Services
+    @using Backend
+    @inject ServicioSessionLogic SessionLogic
+    @inject SqlRepositorioUsuario RepositorioUsuario
+
+    <PageTitle>Index</PageTitle>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-center mt-5">
+                <h1>DepoQuick</h1>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="d-flex justify-content-center">
+        <div class="btn-group" role="group" aria-label="Botones de inicio de sesión">
+            <button type="button" @onclick="IrASignIn" class="btn btn-primary mr-2">Sign In</button>
+            <button type="button" @onclick="IrALogin" class="btn btn-outline-primary">Log In</button>
+        </div>
+    </div>
+
+    @code
+    {
+    void IrALogin()
+    {
+        // Navegar a la página de login
+        NavigationManager.NavigateTo("/login");
+    }
+
+    void IrASignIn()
+    {
+        // Navegar a la página de login
+        NavigationManager.NavigateTo("/signIn");
+    }
+    }
+}
+else
+{
+    @if (SessionLogic.UsuarioActual != null)
+    {
+        <h2>Bienvenido a DepoQuick , @SessionLogic.UsuarioActual.Nombre</h2>
+    }
+    else
+    {
+        <h2>Bienvenido a DepoQuick , @SessionLogic.ClienteActual.Nombre</h2>
+    }
+}
+
+
+

@@ -1,0 +1,167 @@
+﻿@page "/AltaDeposito"
+
+@using Backend
+@using Backend.DTOs
+@using Backend.Controllers
+@using Backend.Services
+@inject ServicioDeposito servicioDeposito
+@inject NavigationManager NavigationManager
+@inject ControllerDeposito ControllerDeposito
+@inject ControllerPromocion ControllerPromocion
+@inject ServicioSessionLogic SessionLogic
+
+@if (SessionLogic.UsuarioActual.Rol == EnumRol.Administrador && SessionLogic.UsuarioActual!=null)
+{
+    <h3>Alta de Depósito</h3>
+
+    <form @onsubmit="HandleSubmit">
+        <div class="mb-3">
+            @if (!IsFormValid())
+            {
+                <div class="error-message" style="color: red;">
+                    @errorMessage
+                </div>
+            }
+            <label for="area" class="form-label">Área:</label>
+            <select class="form-select" id="area" @bind="inputArea">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="nombre" class="form-label">Nombre:</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" @bind="nombre" required>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="tamano" class="form-label">Tamaño:</label>
+            <select class="form-select" id="tamano" @bind="inputTamano">
+                <option value="Pequeno">Pequeño</option>
+                <option value="Mediano">Mediano</option>
+                <option value="Grande">Grande</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="climatizacion" class="form-label">Climatización:</label>
+            <select class="form-select" id="climatizacion" @bind="inputClimatizadoString">
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="promociones" class="form-label">Promociones:</label>
+            <select class="form-select" id="promociones" @bind="selectedPromocionId">
+                @foreach (var promocion in listaPromociones)
+                {
+                    <option value="@promocion.ID">@promocion.Etiqueta</option>
+                }
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar deposito</button>
+    </form>
+
+    @code {
+    private List<DtoPromocion> listaPromociones;
+    private EnumArea inputArea;
+    private string nombre;
+    private EnumTamano inputTamano;
+    private int selectedPromocionId;
+
+    private string inputClimatizadoString;
+
+
+
+    private string errorMessage = "";
+
+    protected override void OnInitialized()
+    {
+        listaPromociones = ControllerPromocion.TraerPromocionesDto();
+    }
+
+    private bool IsFormValid()
+    {
+        if (string.IsNullOrEmpty(inputArea.ToString()))
+        {
+            errorMessage = "Por favor, seleccione un área.";
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(inputTamano.ToString()))
+        {
+            errorMessage = "Por favor, seleccione un tamaño.";
+            return false;
+        }
+
+        if (selectedPromocionId == 0)
+        {
+            errorMessage = "Por favor, seleccione una promoción.";
+            return false;
+        }
+        if (!servicioDeposito.ValidarNombreDeposito(nombre))
+        {
+            errorMessage = "El nombre no es valido.";
+        }
+
+        return true;
+    }
+
+    private void HandleSubmit()
+    {
+        if (IsFormValid())
+        {
+            var promocionDto = ControllerPromocion.EncontrarPromocionPorId(selectedPromocionId);
+            bool climatizado;
+            if (inputClimatizadoString == "Si")
+            {
+                climatizado = true;
+            }
+            else climatizado = false;
+            if (promocionDto != null)
+            {
+                DtoDeposito dtoDeposito = new DtoDeposito
+                {
+                    Area = inputArea,
+                    Tamano = inputTamano,
+                    Climatizado = climatizado,
+                    PromocionId = promocionDto.ID,
+                    Nombre=nombre,
+                };
+
+                ControllerDeposito.AgregarDeposito(dtoDeposito);
+                limpiarFormulario();
+            }
+            else
+            {
+                errorMessage = "La promoción seleccionada no existe.";
+            }
+        }
+    }
+
+    private void limpiarFormulario()
+    {
+        inputArea = default;
+        inputTamano = default;
+        inputClimatizadoString = "false";
+        selectedPromocionId = 0;
+        errorMessage = "";
+    }
+
+    private void volver()
+    {
+        NavigationManager.NavigateTo("/AdminIngresado");
+    }
+    }
+}
+else
+{
+    <h2>No tienes acceso a esta pagina</h2>
+}

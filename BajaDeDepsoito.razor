@@ -1,0 +1,69 @@
+﻿@page "/BajaDeposito"
+@using Backend.DTOs
+@using Backend.Controllers
+@using Backend.Services
+@using Backend
+@inject NavigationManager NavigationManager
+@inject ServicioSessionLogic ServicioSessionLogic
+@inject ControllerDeposito ControllerDeposito
+@inject ControllerReserva ControllerReserva
+
+@if (ServicioSessionLogic.UsuarioActual.Rol == EnumRol.Administrador)
+{
+    <h3>Baja De Depósito</h3>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Área</th>
+                <th>Tamaño</th>
+                <th>Climatizado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var deposito in depositosNoReservados)
+            {
+                <tr>
+                    <td>@deposito.Area</td>
+                    <td>@deposito.Tamano</td>
+                    <td>@(deposito.Climatizado ? "Sí" : "No")</td>
+                    <td>
+                        <button class="btn btn-danger" @onclick="() => DarDeBaja(deposito.ID)">Dar de Baja</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button class="btn btn-secondary" @onclick="Volver">Volver</button>
+
+    @code {
+    private List<DtoDeposito> depositosNoReservados;
+
+    protected override void OnInitialized()
+    {
+        CargarDepositosNoReservados();
+    }
+
+    private void CargarDepositosNoReservados()
+    {
+        depositosNoReservados = ControllerReserva.ObtenerDepositosNoReservados();
+    }
+
+    private void DarDeBaja(int depositoId)
+    {
+        ControllerDeposito.BorrarDeposito(depositoId);
+        CargarDepositosNoReservados();
+    }
+
+    private void Volver()
+    {
+        NavigationManager.NavigateTo("/AdminIngresado");
+    }
+    }
+}
+else
+{
+    <h2>No tienes acceso a esta pagina.</h2>
+}

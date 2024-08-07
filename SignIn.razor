@@ -1,0 +1,160 @@
+﻿@page "/signIn"
+@using Backend
+@using Backend.DTOs
+@using Backend.Services
+@using Backend.Controllers
+@inject NavigationManager NavigationManager
+@inject ServicioSessionLogic ServicioSessionLogic
+@inject ControllerUsuario ControllerUsuario
+@inject ServicioUsuario ServicioUsuario
+
+@if (ServicioSessionLogic.UsuarioActual == null && ServicioSessionLogic.ClienteActual == null)
+{
+    <h3>Registrarse</h3>
+
+    <form class="row g-3" @onsubmit="Registrarse">
+        <div class="col-md-6">
+            <label for="inputNombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="inputNombre" @bind-value="_dtoUsuario.Nombre" placeholder="Nombre">
+            @if (!string.IsNullOrEmpty(_nombreError))
+            {
+                <p class="text-danger">@_nombreError</p>
+            }
+        </div>
+        <div class="col-md-6">
+            <label for="inputApellido" class="form-label">Apellido</label>
+            <input type="text" class="form-control" id="inputApellido" @bind-value="_dtoUsuario.Apellido" placeholder="Apellido">
+            @if (!string.IsNullOrEmpty(_apellidoError))
+            {
+                <p class="text-danger">@_apellidoError</p>
+            }
+        </div>
+        <div class="col-12">
+            <label for="inputEmail" class="form-label">Email</label>
+            <input type="email" class="form-control" id="inputEmail" @bind-value="_dtoUsuario.Mail" placeholder="nombre@dominio.com">
+            @if (!string.IsNullOrEmpty(_mailError))
+            {
+                <p class="text-danger">@_mailError</p>
+            }
+        </div>
+        <div class="col-md-6">
+            <label for="inputPassword" class="form-label">Contraseña</label>
+            <input type="password" class="form-control" id="inputPassword" @bind-value="_dtoUsuario.Contrasena" placeholder="********">
+            @if (!string.IsNullOrEmpty(_contrasenaError))
+            {
+                <p class="text-danger">@_contrasenaError</p>
+            }
+        </div>
+        <div class="col-md-6">
+            <label for="inputPasswordConfirm" class="form-label">Confirmar Contraseña</label>
+            <input type="password" class="form-control" id="inputPasswordConfirm" @bind-value="_contrasenaConfirmada" placeholder="********">
+            @if (!string.IsNullOrEmpty(_contrasenaConfirmadaError))
+            {
+                <p class="text-danger">@_contrasenaConfirmadaError</p>
+            }
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Registrarse</button>
+        </div>
+    </form>
+
+    @code {
+    private DtoUsuario _dtoUsuario = new DtoUsuario();
+    private string _contrasenaConfirmada;
+
+    private string _nombreError;
+    private string _apellidoError;
+    private string _mailError;
+    private string _contrasenaError;
+    private string _contrasenaConfirmadaError;
+
+    private void Registrarse()
+    {
+        if (ServicioUsuario == null)
+        {
+            throw new NullReferenceException("ServicioUsuario no está inicializado.");
+        }
+        if (ControllerUsuario == null)
+        {
+            throw new NullReferenceException("ControllerUsuario no está inicializado.");
+        }
+        if (ServicioSessionLogic == null)
+        {
+            throw new NullReferenceException("ServicioSessionLogic no está inicializado.");
+        }
+
+        if (VerificarSignIn())
+        {
+            if (!ServicioUsuario.ExisteAdmin())
+            {
+                _dtoUsuario.Rol = EnumRol.Administrador;
+                ControllerUsuario.InicializarAdministrador(_dtoUsuario);
+                ServicioSessionLogic.LoginAdmin(_dtoUsuario);
+            }
+            else
+            {
+
+                _dtoUsuario.Rol = EnumRol.Cliente;
+                ControllerUsuario.AgregarUsuario(_dtoUsuario);
+                ServicioSessionLogic.LoginCliente(_dtoUsuario);
+                
+            }
+
+            NavigationManager.NavigateTo("/login");
+            LimpiarCamposFormulario();
+
+        }
+    }
+
+    private bool VerificarSignIn()
+    {
+        if (string.IsNullOrEmpty(_dtoUsuario.Nombre) || !ServicioUsuario.ValidarNombreOApellido(_dtoUsuario.Nombre))
+        {
+            _nombreError = "El nombre no es válido.";
+            return false;
+        }
+        if (string.IsNullOrEmpty(_dtoUsuario.Apellido) || !ServicioUsuario.ValidarNombreOApellido(_dtoUsuario.Apellido))
+        {
+            _apellidoError = "El apellido no es válido.";
+            return false;
+        }
+        if (string.IsNullOrEmpty(_dtoUsuario.Mail) || !ServicioUsuario.VerificarMail(_dtoUsuario.Mail))
+        {
+            _mailError = "El correo electrónico no es válido.";
+            return false;
+        }
+        if (string.IsNullOrEmpty(_dtoUsuario.Contrasena) || !ServicioUsuario.VerificarContrasena(_dtoUsuario.Contrasena))
+        {
+            _contrasenaError = "La contraseña no es válida.";
+            return false;
+        }
+        if (string.IsNullOrEmpty(_contrasenaConfirmada) || _dtoUsuario.Contrasena != _contrasenaConfirmada)
+        {
+            _contrasenaConfirmadaError = "Las contraseñas no coinciden.";
+            return false;
+        }
+        if (ServicioUsuario.ExisteUsuarioConEseMail(_dtoUsuario.Mail))
+        {
+            _mailError = "Ya existe un usuario con este correo electrónico.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private void LimpiarCamposFormulario()
+    {
+        _dtoUsuario = new DtoUsuario();
+        _contrasenaConfirmada = string.Empty;
+    }
+    }
+}
+else
+{
+    <h2>No tienes acceso a esta página</h2>
+}
+
+
+
+
+

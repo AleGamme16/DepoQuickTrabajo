@@ -1,0 +1,46 @@
+﻿@page "/RegistroAccionesClientes"
+@using Backend
+@using Backend.DTOs
+@using Backend.Services
+@using Backend.Controllers  
+@inject ControllerRegistroAccion ControllerRegistroAccion
+@inject ServicioSessionLogic ServicioSessionLogic
+
+@if (ServicioSessionLogic.UsuarioActual != null && ServicioSessionLogic.UsuarioActual.Rol == EnumRol.Administrador)
+{
+    <h3>Registro de Acciones de Clientes</h3>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Acción</th>
+                <th>Fecha y Hora</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var registro in listaRegistros)
+            {
+                <tr>
+                    <td>@registro.UsuarioNombre @registro.UsuarioApellido</td>
+                    <td>@registro.TipoAccion</td>
+                    <td>@registro.FechaHora.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <h2>No tienes acceso a esta pagina.</h2>
+}
+
+@code {
+    private List<DtoRegistroAccion> listaRegistros;
+
+    protected override void OnInitialized()
+    {
+        listaRegistros = ControllerRegistroAccion.TraerRegistrosAccion();
+    }
+}
+

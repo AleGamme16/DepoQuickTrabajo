@@ -1,0 +1,154 @@
+﻿@page "/ReservasAdmin"
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject ControllerReserva ControllerReserva
+@using Backend;
+@using Backend.Controllers;
+@using Backend.DTOs;
+@using Microsoft.AspNetCore.Components.Authorization;
+
+<PageTitle>ReservasAdmin</PageTitle>
+
+<h3>Reservas Activas</h3>
+<hr />
+<br />
+
+<div class="modal" style="display:@(showRejectModal ? "block" : "none");background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Motivo de Rechazo</h5>
+                <button type="button" class="close" @onclick="() => showRejectModal = false">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea class="form-control" placeholder="Ingrese el motivo del rechazo" @bind="motivoRechazo"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" @onclick="() => ConfirmarRechazo(reservaActual)">Confirmar</button>
+                <button class="btn btn-secondary" @onclick="() => showRejectModal = false">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<body class="p-3 m-0 border-0 bd-example m-0 border-0">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Deposito</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Costo</th>
+                <th>Estado</th>
+                <th>Estado de Pago</th> 
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var dtoreserva in listaReservas)
+            {
+                <tr>
+                    <td>@dtoreserva.NombreCliente @dtoreserva.ApellidoCliente</td>
+                    <td>@dtoreserva.DepositoID</td>
+                    <td>@dtoreserva.FechaInicio.ToShortDateString()</td>
+                    <td>@dtoreserva.FechaFin.ToShortDateString()</td>
+                    <td>@dtoreserva.Costo</td>
+                    <td>@dtoreserva.Estado</td>
+                    <td>@dtoreserva.EstadoPago</td> 
+                    <td>
+                        @if (dtoreserva.Estado == EnumEstado.Pendiente && dtoreserva.EstadoPago == EnumEstadoPago.Reservado)
+                        {
+                            <button class="btn btn-success" @onclick="() => AceptarSolicitudReserva(dtoreserva)">Aceptar</button>
+                            <button class="btn btn-danger" @onclick="() => PromptRejectModal(dtoreserva)">Rechazar</button>
+                        }
+                        else if (dtoreserva.Estado == EnumEstado.Pendiente)
+                        {
+                            <button class="btn btn-secondary" disabled>Pago no completado</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h4>Exportar Reporte:</h4>
+    <div>
+        <label for="formatoReporte">Formato de Reporte:</label>
+        <select id="formatoReporte" @bind="formatoReporte">
+            <option value="csv">CSV</option>
+            <option value="txt">TXT</option>
+        </select>
+        <button class="btn btn-primary" @onclick="ExportarReporte">Exportar</button>
+    </div>
+</body>
+
+@code {
+    private List<DtoReserva> listaReservas;
+    private DtoReserva reservaActual;
+    private string motivoRechazo;
+    private bool showRejectModal;
+    private string formatoReporte="txt";
+
+    protected override void OnInitialized()
+    {
+        listaReservas = ControllerReserva.TraerReservasDto();
+        reservaActual = new DtoReserva();
+    }
+
+    private void AceptarSolicitudReserva(DtoReserva unaReserva)
+    {
+        if (unaReserva.EstadoPago != EnumEstadoPago.Reservado)
+        {
+            Console.WriteLine("No se puede aceptar la solicitud. El pago no está en estado 'Reservado'.");
+            return;
+        }
+
+        unaReserva.EstadoPago = EnumEstadoPago.Capturado;
+
+        ControllerReserva.AprobarSolicitud(unaReserva);
+        ActualizarReservas();
+    }
+
+    private void PromptRejectModal(DtoReserva unaReserva)
+    {
+        reservaActual = unaReserva;
+        motivoRechazo = string.Empty;
+        showRejectModal = true;
+    }
+
+    private void ConfirmarRechazo(DtoReserva dtoReserva)
+    {
+        if (dtoReserva == null || dtoReserva.ID == 0)
+        {
+            Console.WriteLine("Error: La reserva no es válida o el ID es 0.");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(motivoRechazo))
+        {
+            Console.WriteLine("Error: El motivo de rechazo no puede estar vacío.");
+            return;
+        }
+
+        ControllerReserva.RechazarSolicitud(dtoReserva, motivoRechazo);
+        showRejectModal = false;
+        ActualizarReservas();
+    }
+
+    private void ActualizarReservas()
+    {
+        listaReservas = ControllerReserva.TraerReservasDto();
+    }
+
+    private void ExportarReporte()
+    {
+        var (content, contentType, fileName) = ControllerReserva.ExportarReporte(formatoReporte);
+        var base64String = Convert.ToBase64String(content);
+        var url = $"data:{contentType};base64,{base64String}";
+        NavigationManager.NavigateTo(url, true);
+    }
+}
+
+
+

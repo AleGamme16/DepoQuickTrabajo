@@ -1,0 +1,87 @@
+﻿@using Backend
+@using Backend.Services
+@inject NavigationManager NavigationManager
+@inject ServicioSessionLogic SessionLogic
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        @if (SessionLogic.UsuarioActual != null && SessionLogic.UsuarioActual.Rol == EnumRol.Administrador)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="ReservasAdmin">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Gestion de Reservas
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="RegistroClientes">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Registro de Clientes
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="GestionPromociones">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Gestionar Promociones
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="AltaDeposito">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Alta de Deposito
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="BajaDeposito">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Baja de Deposito
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="RegistroAccionesClientes">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Registro de Acciones
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="Estadistica">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Estadisticas
+                </NavLink>
+            </div>
+        }
+        @if (SessionLogic.ClienteActual != null && SessionLogic.ClienteActual.Rol == EnumRol.Cliente)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="ReservasCliente">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Reservar Deposito
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="Notificaciones">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Notificaciones
+                </NavLink>
+            </div>
+        }
+    </nav>
+</div>
+
+@* @if (SessionLogic.ClienteActual != null && SessionLogic.UsuarioActual == null)
+{
+    <h2> Bienvenido @SessionLogic.ClienteActual.Nombre</h2>
+}
+
+@if (SessionLogic.UsuarioActual != null && SessionLogic.ClienteActual == null)
+{
+    <h2> Bienvenido @SessionLogic.UsuarioActual.Nombre</h2>
+}
+ *@
+@code {
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
+

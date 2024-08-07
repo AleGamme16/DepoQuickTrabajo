@@ -1,0 +1,114 @@
+﻿@page "/Estadistica"
+@using ChartJs.Blazor.BarChart
+@using ChartJs.Blazor.Common
+@using ChartJs.Blazor.Common.Axes
+@using ChartJs.Blazor.Common.Axes.Ticks
+@using ChartJs.Blazor.Common.Enums
+@using ChartJs.Blazor.Common.Handlers
+@using ChartJs.Blazor.Common.Time
+@using ChartJs.Blazor.Util
+@using ChartJs.Blazor.Interop
+@using Backend
+@using Backend.DTOs
+@using Backend.Controllers
+@using ChartJs.Blazor
+@using System.Collections.Generic
+@using System.Linq
+@inject NavigationManager NavigationManager
+@* @inject ControllerReserva ControllerReserva *@
+
+<PageTitle>Estadísticas de Reservas</PageTitle>
+
+<h3>Estadísticas de Reservas</h3>
+<button class="btn btn-primary" @onclick="ActualizarEstadisticas">Actualizar Estadísticas</button>
+
+<div>
+    <h4>Ingresos por Zona</h4>
+    <Chart Config="@_configIngresos" />
+</div>
+
+<div>
+    <h4>Cantidad de Depósitos Alquilados por Zona</h4>
+    <Chart Config="@_configCantidad" />
+</div>
+
+@code {
+    private BarConfig _configIngresos;
+    private BarConfig _configCantidad;
+
+    protected override void OnInitialized()
+    {
+        _configIngresos = new BarConfig
+            {
+                Options = new BarOptions
+                {
+                    Responsive = true,
+                    Legend = new Legend
+                    {
+                        Position = Position.Top
+                    },
+                    Title = new OptionsTitle
+                    {
+                        Display = true,
+                        Text = "Ingresos por Alquileres por Zona"
+                    }
+                }
+            };
+
+        _configCantidad = new BarConfig
+            {
+                Options = new BarOptions
+                {
+                    Responsive = true,
+                    Legend = new Legend
+                    {
+                        Position = Position.Top
+                    },
+                    Title = new OptionsTitle
+                    {
+                        Display = true,
+                        Text = "Cantidad de Depósitos Alquilados por Zona"
+                    }
+                }
+            };
+
+        ActualizarEstadisticas();
+    }
+
+    private void ActualizarEstadisticas()
+    {
+        // DateTime fechaInicio = new DateTime(2024, 1, 1);
+        // DateTime fechaFin = new DateTime(2024, 12, 31);
+
+        // var ingresosPorZona = Controllerreserva.CalcularIngresosPorAlquileresPorZona(fechaInicio, fechaFin);
+        // var cantidadDepositosPorZona = ControllerReserva.ContarDepositosAlquiladosPorZona(fechaInicio, fechaFin);
+
+        // _configIngresos.Data = new ChartJs.Blazor.Common.ChartData
+        //     {
+        //         Labels = ingresosPorZona.Keys.Select(k => k.ToString()).ToArray(),
+        //         Datasets = new List<IDataset>
+        //     {
+        //         new BarDataset<decimal>
+        //         {
+        //             Label = "Ingresos",
+        //             Data = ingresosPorZona.Values.ToList(),
+        //             BackgroundColor = ingresosPorZona.Keys.Select(_ => ColorUtil.RandomColorString()).ToArray()
+        //         }
+        //     }
+        //     };
+
+        // _configCantidad.Data = new ChartJs.Blazor.Common.ChartData
+        //     {
+        //         Labels = cantidadDepositosPorZona.Keys.Select(k => k.ToString()).ToArray(),
+        //         Datasets = new List<IDataset>
+        //     {
+        //         new BarDataset<int>
+        //         {
+        //             Label = "Cantidad de Depósitos",
+        //             Data = cantidadDepositosPorZona.Values.ToList(),
+        //             BackgroundColor = cantidadDepositosPorZona.Keys.Select(_ => ColorUtil.RandomColorString()).ToArray()
+        //         }
+        //     }
+        //     };
+    }
+}

@@ -1,0 +1,43 @@
+﻿@using Backend
+@using Backend.Services
+@inherits LayoutComponentBase
+@inject IHostEnvironment HostEnvironment
+@inject MemoryDatabase MemoryDatabase
+@inject ServicioSessionLogic SessionLogic
+@inject NavigationManager NavigationManager
+
+<PageTitle>Blazor</PageTitle>
+
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="/" target="_blank" @onclick=CerrarSesion>Log Out</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    private void RedirectToPage(string page)
+    {
+        NavigationManager.NavigateTo(page);
+    }
+
+    private void CerrarSesion()
+    {
+        SessionLogic.Logout();
+        //StateHasChanged(); // Asegura que la UI se actualice
+        NavigationManager.NavigateTo("/signIn");
+    }
+}
+
+       
+

@@ -1,0 +1,63 @@
+﻿@page "/GestionPromociones"
+@using Backend.DTOs
+@using Backend.Controllers
+@inject ControllerPromocion ControllerPromocion
+
+<h3>Gestion De Promociones</h3>
+<hr />
+<br />
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<form @onsubmit="AgregarPromocion">
+    <div class="mb-3">
+        <label for="etiqueta" class="form-label">Etiqueta</label>
+        <input type="text" class="form-control" id="etiqueta" @bind="dtoPromocion.Etiqueta" />
+    </div>
+    <div class="mb-3">
+        <label for="descuento" class="form-label">Porcentaje de descuento (%)</label>
+        <input type="number" class="form-control" id="descuento" @bind="dtoPromocion.Descuento" min="5" max="75"/>
+    </div>
+    <div class="mb-3">
+        <label for="fechaDesde" class="form-label">Fecha (Desde)</label>
+        <input type="date" class="form-control" id="fechaDesde" @bind="dtoPromocion.Desde" min="@DateTime.Today.ToString("yyyy-MM-dd")"/>
+    </div>
+    <div class="mb-3">
+        <label for="fechaHasta" class="form-label">Fecha (Hasta)</label>
+        <input type="date" class="form-control" id="fechaHasta" @bind="dtoPromocion.Hasta" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+    </div>
+    <button type="submit" class="btn btn-primary">Agregar Promocion</button>
+</form>
+
+@code {
+    private DtoPromocion dtoPromocion = new DtoPromocion();
+    private string errorMessage;
+
+    private void AgregarPromocion()
+    {
+        errorMessage = string.Empty;
+
+        if (dtoPromocion.Desde > dtoPromocion.Hasta)
+        {
+            errorMessage = "La fecha de inicio no puede ser posterior a la fecha final.";
+            return;
+        }
+
+        try
+        {
+            ControllerPromocion.AgregarPromocion(dtoPromocion);
+            dtoPromocion = new DtoPromocion
+                {
+                    Desde = DateTime.Today,
+                    Hasta = DateTime.Today.AddDays(7)
+                }; // Limpiar el formulario y reiniciar las fechas
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al agregar la promoción: " + ex.Message;
+        }
+    }
+}
